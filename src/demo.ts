@@ -25,11 +25,13 @@ class Base {
     this.initialize();
   }
 
+  // 爬网页html数据
   async getHtml() {
     const res = await superagent.get(this.url);
     return res.text
   }
 
+  // 获取爬到的文章数据
   getArticleList(html: string) {
     const $ = cheerio.load(html);
     const articleList: articleType[] = []
@@ -49,27 +51,31 @@ class Base {
     }
   }
 
-  // 把内容写入文件
-  recordToFile(content: content) {
+  // 获取要写入文件的内容
+  getFileData(content: content) {
+    let fileData: fileContent = {}
     if (fs.existsSync(this.filePath)) {
       // 判断是否有内容
       let fileText = fs.readFileSync(this.filePath, 'utf-8')
-      console.log('fileText', fileText)
-      let defaultData: fileContent = {}
       if (fileText) {
         // 已经有内容，先取出内容
-        defaultData = JSON.parse(fileText)
+        fileData = JSON.parse(fileText)
       }
-      // 无内容
-      defaultData[content.time] = content.data
-      fs.writeFileSync(this.filePath, JSON.stringify(defaultData))
     }
+    fileData[content.time] = content.data
+    return fileData
+  }
+
+  // 把内容写入文件
+  writeToFile(fileData: string) {
+    fs.writeFileSync(this.filePath, fileData)
   }
 
   async initialize() {
     const html = await this.getHtml()
     const articleList = this.getArticleList(html)
-    this.recordToFile(articleList)
+    const fileData = this.getFileData(articleList)
+    this.writeToFile(JSON.stringify(fileData))
   }
 }
 
